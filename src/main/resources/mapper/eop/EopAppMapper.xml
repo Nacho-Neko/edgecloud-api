@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mikou.edgecloud.eop.domain.infrastructure.persistence.mapper.EopAppMapper">
+
+    <resultMap id="EopAppResultMap" type="com.mikou.edgecloud.eop.domain.infrastructure.persistence.entity.EopAppEntity">
+        <id property="id" column="id"/>
+        <result property="eopTag" column="eop_tag"/>
+        <result property="edgeId" column="edge_id"/>
+        <result property="settings" column="settings" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="selectPageWithRegion" resultMap="EopAppResultMap">
+        SELECT a.* FROM eop_app a
+        INNER JOIN edge e ON a.edge_id = e.id
+        <if test="cityId != null">
+            INNER JOIN edge_area city ON e.region_id = city.id
+        </if>
+        <if test="regionId != null">
+            INNER JOIN edge_area state ON (
+                <choose>
+                    <when test="cityId != null">city.id</when>
+                    <otherwise>e.region_id</otherwise>
+                </choose>
+            ) = state.id
+        </if>
+        <if test="countryId != null">
+            INNER JOIN edge_area country ON (
+                <choose>
+                    <when test="regionId != null">state.parent_id</when>
+                    <when test="cityId != null">
+                        (SELECT parent_id FROM edge_area WHERE id = (SELECT parent_id FROM edge_area WHERE id = city.id))
+                    </when>
+                    <otherwise>e.region_id</otherwise>
+                </choose>
+            ) = country.id
+        </if>
+        <where>
+            <if test="cityId != null">
+                AND city.id = #{cityId}
+            </if>
+            <if test="regionId != null">
+                AND state.id = #{regionId}
+            </if>
+            <if test="countryId != null">
+                AND country.id = #{countryId}
+            </if>
+        </where>
+    </select>
+
+</mapper>

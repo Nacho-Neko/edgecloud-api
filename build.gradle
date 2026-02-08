@@ -1,0 +1,69 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.2'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.mikou'
+version = '0.0.1-SNAPSHOT'
+description = 'edgecloud'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // NATS
+    implementation 'io.nats:jnats:2.25.1'
+
+    // MapStruct
+    implementation("org.mapstruct:mapstruct:1.6.3")
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
+
+    // Json
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.21.0'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.21.0'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.21'
+
+    // mybatis
+    implementation 'com.baomidou:mybatis-plus-spring-boot3-starter:3.5.16'
+    // implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.1'
+    // testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:4.0.1'
+
+    // Swagger
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1'
+
+    // JJWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
+
+    // Flyway for database migration
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+
+    // SpringBoot
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    implementation 'org.springframework.data:spring-data-commons'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    runtimeOnly 'org.postgresql:postgresql'
+    testImplementation 'org.springframework.boot:spring-boot-starter-jdbc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
