@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.toolkit.GlobalConfigUtils;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler;
 import javax.sql.DataSource;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.BaseTypeHandler;
-import org.apache.ibatis.type.EnumTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 import org.springframework.context.annotation.Bean;
@@ -36,8 +36,8 @@ public class MybatisPlusConfig {
         
         MybatisConfiguration configuration = new MybatisConfiguration();
         configuration.setMapUnderscoreToCamelCase(true);
-        // 关键：开启字段映射
-        configuration.setDefaultEnumTypeHandler(EnumTypeHandler.class);
+        // 关键：开启字段映射，使用 MybatisEnumTypeHandler 以支持 @EnumValue
+        configuration.setDefaultEnumTypeHandler(MybatisEnumTypeHandler.class);
 
         // 注册 UUID TypeHandler
         TypeHandlerRegistry typeHandlerRegistry = configuration.getTypeHandlerRegistry();
