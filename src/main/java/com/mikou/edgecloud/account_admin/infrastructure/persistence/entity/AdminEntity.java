@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.mikou.edgecloud.account.domain.AccountStatus;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -25,8 +26,8 @@ public class AdminEntity {
     @TableField("role_id")
     private UUID roleId;
 
-    @TableField("status")
-    private String status;
+    @TableField("account_status")
+    private AccountStatus accountStatus;
 
     @TableField("last_login_at")
     private Instant lastLoginAt;
@@ -88,12 +89,12 @@ public class AdminEntity {
         return this;
     }
 
-    public String getStatus() {
-        return status;
+    public AccountStatus getAccountStatus() {
+        return accountStatus;
     }
 
-    public AdminEntity setStatus(String status) {
-        this.status = status;
+    public AdminEntity setAccountStatus(AccountStatus accountStatus) {
+        this.accountStatus = accountStatus;
         return this;
     }
 

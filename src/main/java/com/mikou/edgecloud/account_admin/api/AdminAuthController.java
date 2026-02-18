@@ -1,5 +1,6 @@
 package com.mikou.edgecloud.account_admin.api;
 
+import com.mikou.edgecloud.account_admin.api.dto.AdminChangePasswordRequest;
 import com.mikou.edgecloud.account_admin.api.dto.AdminLoginRequest;
 import com.mikou.edgecloud.account_admin.api.dto.AdminLoginResponse;
 import com.mikou.edgecloud.account_admin.application.auth.AdminAuthService;
@@ -31,5 +32,14 @@ public class AdminAuthController {
     public void logout(Authentication authentication, HttpServletRequest httpRequest) {
         String adminId = (authentication != null ? authentication.getName() : null);
         adminAuthService.logout(adminId, httpRequest);
+    }
+
+    @PostMapping("/change-password")
+    @Operation(summary = "修改密码", description = "修改管理员密码，不需要登录验证，直接传递用户名和新密码即可")
+    public void changePassword(
+            @RequestBody AdminChangePasswordRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        adminAuthService.changePassword(request.getUsername(), request.getNewPassword(), httpRequest);
     }
 }

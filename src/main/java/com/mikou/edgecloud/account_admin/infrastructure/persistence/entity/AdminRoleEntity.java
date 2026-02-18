@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.mikou.edgecloud.account_admin.domain.RoleStatus;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -26,7 +27,7 @@ public class AdminRoleEntity {
     private String description;
 
     @TableField("status")
-    private String status;
+    private RoleStatus status;
 
     @TableField("sort_order")
     private Integer sortOrder;
@@ -85,11 +86,11 @@ public class AdminRoleEntity {
         return this;
     }
 
-    public String getStatus() {
+    public RoleStatus getStatus() {
         return status;
     }
 
-    public AdminRoleEntity setStatus(String status) {
+    public AdminRoleEntity setStatus(RoleStatus status) {
         this.status = status;
         return this;
     }

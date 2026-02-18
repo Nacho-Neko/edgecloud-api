@@ -1,5 +1,6 @@
 package com.mikou.edgecloud.account_admin.api.dto;
 
+import com.mikou.edgecloud.account_admin.domain.RoleStatus;
 import java.util.List;
 import java.util.UUID;
 
@@ -10,7 +11,7 @@ public class AdminRoleDto {
     private UUID parentId;
     private String parentName;
     private String description;
-    private String status;
+    private RoleStatus status;
     private Integer sortOrder;
     private List<String> permissionCodes;
 
@@ -68,11 +69,11 @@ public class AdminRoleDto {
         return this;
     }
 
-    public String getStatus() {
+    public RoleStatus getStatus() {
         return status;
     }
 
-    public AdminRoleDto setStatus(String status) {
+    public AdminRoleDto setStatus(RoleStatus status) {
         this.status = status;
         return this;
     }

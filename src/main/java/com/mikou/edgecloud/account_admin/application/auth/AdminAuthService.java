@@ -1,6 +1,8 @@
 package com.mikou.edgecloud.account_admin.application.auth;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.mikou.edgecloud.account.domain.AccountStatus;
+import com.mikou.edgecloud.account_admin.domain.RoleStatus;
 import com.mikou.edgecloud.account_admin.api.dto.AdminLoginRequest;
 import com.mikou.edgecloud.account_admin.api.dto.AdminLoginResponse;
 import com.mikou.edgecloud.account_admin.infrastructure.persistence.entity.AdminAuditEntity;
@@ -61,7 +63,7 @@ public class AdminAuthService {
         if (admin == null) {
             throw new IllegalArgumentException("Invalid credentials");
         }
-        if (!"ACTIVE".equals(admin.getStatus())) {
+        if (AccountStatus.ENABLED != admin.getAccountStatus()) {
             throw new IllegalArgumentException("Admin account disabled");
         }
         if (!passwordEncoder.matches(req.getPassword(), admin.getPasswordHash())) {
@@ -73,7 +75,7 @@ public class AdminAuthService {
         if (role == null) {
             throw new IllegalArgumentException("Admin role not found");
         }
-        if (!"ACTIVE".equals(role.getStatus())) {
+        if (RoleStatus.ENABLED != role.getStatus()) {
             throw new IllegalArgumentException("Admin role is disabled");
         }
 
@@ -133,6 +135,39 @@ public class AdminAuthService {
         } catch (IllegalArgumentException e) {
             // Invalid UUID, ignore
         }
+    }
+
+    @Transactional
+    public void changePassword(String username, String newPassword, HttpServletRequest httpRequest) {
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("Username is required");
+        }
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new IllegalArgumentException("New password is required");
+        }
+
+        // 通过用户名查询管理员
+        AdminEntity admin = adminMapper.selectOne(new LambdaQueryWrapper<AdminEntity>()
+                .eq(AdminEntity::getUsername, username)
+                .last("limit 1"));
+
+        if (admin == null) {
+            throw new IllegalArgumentException("Admin not found");
+        }
+
+        // 直接修改密码（不验证旧密码）
+        admin.setPasswordHash(passwordEncoder.encode(newPassword));
+        admin.setUpdatedAt(Instant.now());
+        adminMapper.updateById(admin);
+
+        // 记录审计日志
+        auditMapper.insert(new AdminAuditEntity()
+                .setAdminId(admin.getId())
+                .setAction("ADMIN_CHANGE_PASSWORD")
+                .setIpAddress(getClientIp(httpRequest))
+                .setUserAgent(httpRequest.getHeader("User-Agent"))
+                .setCreatedAt(Instant.now())
+        );
     }
 
     private String getClientIp(HttpServletRequest request) {
