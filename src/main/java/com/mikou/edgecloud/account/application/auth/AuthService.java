@@ -78,8 +78,8 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
-        // Minimal: hardcode authorities for now; replace with DB roles later.
-        String authorities = "KYC_VIEW,KYC_REVEAL";
+        // 普通账户权限（不带 admin: 前缀）
+        String authorities = "USER";
         String token = jwtService.createToken(String.valueOf(account.getId()), authorities);
 
         return new LoginResponse()
