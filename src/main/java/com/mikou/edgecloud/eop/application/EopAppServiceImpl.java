@@ -156,6 +156,7 @@ public class EopAppServiceImpl implements EopAppService {
         return new EopBoundDto()
                 .setTag(entity.getTag())
                 .setDirection(entity.getDirection())
+                .setStatus(entity.getStatus())
                 .setMaxConnections(entity.getMaxConnections())
                 .setExtraParams(entity.getExtraParams())
                 .setCreatedAt(entity.getCreatedAt());

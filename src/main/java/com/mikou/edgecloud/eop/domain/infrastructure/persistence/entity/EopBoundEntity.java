@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.mikou.edgecloud.eop.domain.enums.EopDirection;
+import com.mikou.edgecloud.eop.domain.enums.EopStatus;
 import com.mikou.edgecloud.eop.domain.model.EopBoundParams;
 
 import java.time.Instant;
@@ -34,6 +35,9 @@ public class EopBoundEntity {
 
     @TableField("direction")
     private EopDirection direction;
+
+    @TableField("status")
+    private EopStatus status = EopStatus.RUNNING;
 
     @TableField("addr_id")
     private Integer addrId;
@@ -73,6 +77,9 @@ public class EopBoundEntity {
 
     public EopDirection getDirection() { return direction; }
     public EopBoundEntity setDirection(EopDirection direction) { this.direction = direction; return this; }
+
+    public EopStatus getStatus() { return status; }
+    public EopBoundEntity setStatus(EopStatus status) { this.status = status; return this; }
 
     public Integer getAddrId() { return addrId; }
     public EopBoundEntity setAddrId(Integer addrId) { this.addrId = addrId; return this; }

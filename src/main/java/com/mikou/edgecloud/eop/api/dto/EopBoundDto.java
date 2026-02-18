@@ -1,6 +1,7 @@
 package com.mikou.edgecloud.eop.api.dto;
 
 import com.mikou.edgecloud.eop.domain.enums.EopDirection;
+import com.mikou.edgecloud.eop.domain.enums.EopStatus;
 import com.mikou.edgecloud.eop.domain.model.EopBoundParams;
 import java.time.Instant;
 import java.util.UUID;
@@ -8,6 +9,7 @@ import java.util.UUID;
 public class EopBoundDto {
     private UUID tag;
     private EopDirection direction;
+    private EopStatus status;
     private Integer maxConnections;
     private EopBoundParams extraParams;
     private Instant createdAt;
@@ -17,6 +19,9 @@ public class EopBoundDto {
 
     public EopDirection getDirection() { return direction; }
     public EopBoundDto setDirection(EopDirection direction) { this.direction = direction; return this; }
+
+    public EopStatus getStatus() { return status; }
+    public EopBoundDto setStatus(EopStatus status) { this.status = status; return this; }
 
     public Integer getMaxConnections() { return maxConnections; }
     public EopBoundDto setMaxConnections(Integer maxConnections) { this.maxConnections = maxConnections; return this; }

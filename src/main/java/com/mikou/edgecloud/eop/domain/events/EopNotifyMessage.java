@@ -56,5 +56,6 @@ public class EopNotifyMessage {
     public static final String ACTION_DELETE_TRANSFER = "DELETE_TRANSFER";
     public static final String ACTION_CREATE_BOUND = "CREATE_BOUND";
     public static final String ACTION_DELETE_BOUND = "DELETE_BOUND";
+    public static final String ACTION_STOP_BOUND = "STOP_BOUND";
     public static final String ACTION_UPDATE_SETTINGS = "UPDATE_SETTINGS";
 }

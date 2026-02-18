@@ -263,22 +263,68 @@ public class EopService {
     }
 
     /**
-     * 级联回收：当服务到期时释放所有 Bound
+     * 级联回收：当服务到期时暂停所有 Bound
      */
     @EventListener
     @Transactional
     public void onServiceExpired(EopServiceExpiredEvent event) {
+        suspendServiceBounds(event.serviceId());
+    }
+
+    /**
+     * 暂停服务下的所有 Bound
+     */
+    @Transactional
+    public void suspendServiceBounds(Integer serviceId) {
         List<EopBoundEntity> bounds = eopBoundMapper.selectList(new LambdaQueryWrapper<EopBoundEntity>()
-                .eq(EopBoundEntity::getServiceId, event.serviceId()));
-        
+                .eq(EopBoundEntity::getServiceId, serviceId)
+                .isNull(EopBoundEntity::getRemovedAt));
+
+        Instant now = Instant.now();
         for (EopBoundEntity bound : bounds) {
-            deleteBound(bound.getId());
+            if (bound.getStatus() == com.mikou.edgecloud.eop.domain.enums.EopStatus.RUNNING) {
+                bound.setStatus(com.mikou.edgecloud.eop.domain.enums.EopStatus.PAUSED);
+                bound.setUpdatedAt(now);
+                eopBoundMapper.updateById(bound);
+
+                // 通知 NATS 停止
+                EopAppEntity app = eopAppMapper.selectById(bound.getEopId());
+                if (app != null) {
+                    notifyNats(EopNotifyMessage.ACTION_STOP_BOUND, getEdgeTag(app.getEdgeId()), bound);
+                }
+            }
+        }
+    }
+
+    @Transactional
+    public void resumeServiceBounds(Integer serviceId) {
+        List<EopBoundEntity> bounds = eopBoundMapper.selectList(new LambdaQueryWrapper<EopBoundEntity>()
+                .eq(EopBoundEntity::getServiceId, serviceId)
+                .isNull(EopBoundEntity::getRemovedAt));
+
+        Instant now = Instant.now();
+        for (EopBoundEntity bound : bounds) {
+            if (bound.getStatus() == com.mikou.edgecloud.eop.domain.enums.EopStatus.PAUSED) {
+                bound.setStatus(com.mikou.edgecloud.eop.domain.enums.EopStatus.RUNNING);
+                bound.setUpdatedAt(now);
+                eopBoundMapper.updateById(bound);
+
+                // 通知 NATS 恢复 (重新创建指令)
+                EopAppEntity app = eopAppMapper.selectById(bound.getEopId());
+                if (app != null) {
+                    notifyNats(EopNotifyMessage.ACTION_CREATE_BOUND, getEdgeTag(app.getEdgeId()), bound);
+                }
+            }
         }
     }
 
     @Transactional
     public void renewService(String tag, int months) {
         EopServiceEntity service = getServiceByTag(tag);
+        
+        // 如果服务是暂停状态，续费后可能需要恢复
+        boolean wasSuspended = service.getStatus() == EopServiceStatus.SUSPENDED;
+        
         Instant currentExpiry = service.getExpiredAt();
         if (currentExpiry == null) {
             currentExpiry = Instant.now();
@@ -288,6 +334,12 @@ public class EopService {
         Instant newExpiry = currentExpiry.plus(months * 30L, java.time.temporal.ChronoUnit.DAYS);
         service.setExpiredAt(newExpiry);
         service.setUpdatedAt(Instant.now());
+        
+        if (wasSuspended && newExpiry.isAfter(Instant.now())) {
+            service.setStatus(EopServiceStatus.ACTIVE);
+            resumeServiceBounds(service.getId());
+        }
+        
         eopServiceMapper.updateById(service);
     }
 
@@ -368,6 +420,7 @@ public class EopService {
         return new EopBoundDto()
                 .setTag(entity.getTag())
                 .setDirection(entity.getDirection())
+                .setStatus(entity.getStatus())
                 .setMaxConnections(entity.getMaxConnections())
                 .setExtraParams(entity.getExtraParams())
                 .setCreatedAt(entity.getCreatedAt());
