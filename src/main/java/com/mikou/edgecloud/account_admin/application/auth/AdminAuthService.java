@@ -5,6 +5,7 @@ import com.mikou.edgecloud.account.domain.AccountStatus;
 import com.mikou.edgecloud.account_admin.domain.RoleStatus;
 import com.mikou.edgecloud.account_admin.api.dto.AdminLoginRequest;
 import com.mikou.edgecloud.account_admin.api.dto.AdminLoginResponse;
+import com.mikou.edgecloud.account_admin.api.dto.AdminValidateResponse;
 import com.mikou.edgecloud.account_admin.infrastructure.persistence.entity.AdminAuditEntity;
 import com.mikou.edgecloud.account_admin.infrastructure.persistence.entity.AdminEntity;
 import com.mikou.edgecloud.account_admin.infrastructure.persistence.entity.AdminPermissionEntity;
@@ -168,6 +169,53 @@ public class AdminAuthService {
                 .setUserAgent(httpRequest.getHeader("User-Agent"))
                 .setCreatedAt(Instant.now())
         );
+    }
+
+    /**
+     * 验证管理员 Token，返回管理员信息
+     * 
+     * @param adminIdStr 从 Authentication 中获取的管理员 ID
+     * @return 管理员验证响应
+     */
+    public AdminValidateResponse validate(String adminIdStr) {
+        if (adminIdStr == null || adminIdStr.isBlank()) {
+            throw new IllegalArgumentException("Admin ID is required");
+        }
+
+        java.util.UUID adminId;
+        try {
+            adminId = java.util.UUID.fromString(adminIdStr);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid admin ID format");
+        }
+
+        // 查询管理员信息
+        AdminEntity admin = adminMapper.selectById(adminId);
+        if (admin == null) {
+            throw new IllegalArgumentException("Admin not found");
+        }
+
+        // 检查账户状态
+        if (AccountStatus.ENABLED != admin.getAccountStatus()) {
+            throw new IllegalArgumentException("Admin account is disabled");
+        }
+
+        // 查询角色信息
+        AdminRoleEntity role = roleMapper.selectById(admin.getRoleId());
+        if (role == null) {
+            throw new IllegalArgumentException("Admin role not found");
+        }
+
+        if (RoleStatus.ENABLED != role.getStatus()) {
+            throw new IllegalArgumentException("Admin role is disabled");
+        }
+
+        // 返回验证结果
+        return new AdminValidateResponse()
+                .setAdminId(admin.getId().toString())
+                .setUsername(admin.getUsername())
+                .setRole(role.getCode())
+                .setRoleDisplayName(role.getName());
     }
 
     private String getClientIp(HttpServletRequest request) {

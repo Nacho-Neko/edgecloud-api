@@ -3,6 +3,7 @@ package com.mikou.edgecloud.account_admin.api;
 import com.mikou.edgecloud.account_admin.api.dto.AdminChangePasswordRequest;
 import com.mikou.edgecloud.account_admin.api.dto.AdminLoginRequest;
 import com.mikou.edgecloud.account_admin.api.dto.AdminLoginResponse;
+import com.mikou.edgecloud.account_admin.api.dto.AdminValidateResponse;
 import com.mikou.edgecloud.account_admin.application.auth.AdminAuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,5 +42,14 @@ public class AdminAuthController {
             HttpServletRequest httpRequest
     ) {
         adminAuthService.changePassword(request.getUsername(), request.getNewPassword(), httpRequest);
+    }
+
+    @GetMapping("/validate")
+    @Operation(summary = "验证管理员 Token", description = "验证当前管理员 Token 是否有效，并返回管理员基本信息")
+    public AdminValidateResponse validate(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new IllegalArgumentException("Not authenticated");
+        }
+        return adminAuthService.validate(authentication.getName());
     }
 }
