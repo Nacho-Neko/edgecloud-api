@@ -50,60 +50,30 @@ public class BusinessAggregateService {
      */
     public long getRunningBusinessCount() {
         return businessDomains.stream()
-                .filter(b -> b.getStatus() == BusinessStatus.RUNNING)
+                .filter(b -> b.getStatus() == BusinessStatus.ENABLED)
                 .count();
     }
     
     /**
-     * 获取维护中的业务数量
+     * 获取所有业务的激活产品总数
      */
-    public long getMaintenanceBusinessCount() {
-        return businessDomains.stream()
-                .filter(b -> b.getStatus() == BusinessStatus.MAINTENANCE)
-                .count();
-    }
-    
-    /**
-     * 获取已停用的业务数量
-     */
-    public long getDisabledBusinessCount() {
-        return businessDomains.stream()
-                .filter(b -> b.getStatus() == BusinessStatus.DISABLED)
-                .count();
-    }
-    
-    /**
-     * 获取所有业务的总收入
-     */
-    public long getTotalRevenue() {
+    public long getTotalActiveProducts() {
         return businessDomains.stream()
                 .mapToLong(b -> {
-                    Long revenue = b.getStatistics().getTotalRevenue();
-                    return revenue != null ? revenue : 0L;
+                    Long products = b.getStatistics().getActiveProducts();
+                    return products != null ? products : 0L;
                 })
                 .sum();
     }
     
     /**
-     * 获取所有业务的总用户数（去重）
+     * 获取所有业务本月新增产品总数
      */
-    public long getTotalUsers() {
+    public long getTotalMonthlyNewProducts() {
         return businessDomains.stream()
                 .mapToLong(b -> {
-                    Long users = b.getStatistics().getTotalUsers();
-                    return users != null ? users : 0L;
-                })
-                .sum();
-    }
-    
-    /**
-     * 获取所有业务的总订单数
-     */
-    public long getTotalOrders() {
-        return businessDomains.stream()
-                .mapToLong(b -> {
-                    Long orders = b.getStatistics().getTotalOrders();
-                    return orders != null ? orders : 0L;
+                    Long products = b.getStatistics().getMonthlyNewProducts();
+                    return products != null ? products : 0L;
                 })
                 .sum();
     }
@@ -139,7 +109,7 @@ public class BusinessAggregateService {
      * 获取所有运行中的业务
      */
     public List<BusinessDomain> getRunningBusinesses() {
-        return getBusinessesByStatus(BusinessStatus.RUNNING);
+        return getBusinessesByStatus(BusinessStatus.ENABLED);
     }
     
     /**

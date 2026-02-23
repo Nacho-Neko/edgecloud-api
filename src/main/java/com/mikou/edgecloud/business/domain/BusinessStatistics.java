@@ -1,79 +1,44 @@
 package com.mikou.edgecloud.business.domain;
 
-import java.util.Map;
-
 /**
  * 业务统计数据
+ * 
+ * 统计原则：只统计有意义的数据
+ * - 当前激活的产品数量：反映业务规模
+ * - 本月新增产品数量：反映业务增长
+ * 
+ * 不统计的：
+ * - 暂停/过期数量：知道了也没用，不能强迫人家续费
+ * - 总产品数：包含过期的没意义
+ * - 用户数/收入：不是业务领域该管的
  */
 public class BusinessStatistics {
     
     /**
-     * 总用户数
+     * 当前激活的产品数量（ACTIVE 状态）
      */
-    private Long totalUsers;
+    private Long activeProducts;
     
     /**
-     * 活跃用户数
+     * 本月新增产品数量
      */
-    private Long activeUsers;
+    private Long monthlyNewProducts;
     
-    /**
-     * 总订单数
-     */
-    private Long totalOrders;
-    
-    /**
-     * 总收入（分）
-     */
-    private Long totalRevenue;
-    
-    /**
-     * 自定义统计数据（业务特有指标）
-     */
-    private Map<String, Object> customMetrics;
-    
-    public Long getTotalUsers() {
-        return totalUsers;
+    public Long getActiveProducts() {
+        return activeProducts;
     }
     
-    public BusinessStatistics setTotalUsers(Long totalUsers) {
-        this.totalUsers = totalUsers;
+    public BusinessStatistics setActiveProducts(Long activeProducts) {
+        this.activeProducts = activeProducts;
         return this;
     }
     
-    public Long getActiveUsers() {
-        return activeUsers;
+    public Long getMonthlyNewProducts() {
+        return monthlyNewProducts;
     }
     
-    public BusinessStatistics setActiveUsers(Long activeUsers) {
-        this.activeUsers = activeUsers;
-        return this;
-    }
-    
-    public Long getTotalOrders() {
-        return totalOrders;
-    }
-    
-    public BusinessStatistics setTotalOrders(Long totalOrders) {
-        this.totalOrders = totalOrders;
-        return this;
-    }
-    
-    public Long getTotalRevenue() {
-        return totalRevenue;
-    }
-    
-    public BusinessStatistics setTotalRevenue(Long totalRevenue) {
-        this.totalRevenue = totalRevenue;
-        return this;
-    }
-    
-    public Map<String, Object> getCustomMetrics() {
-        return customMetrics;
-    }
-    
-    public BusinessStatistics setCustomMetrics(Map<String, Object> customMetrics) {
-        this.customMetrics = customMetrics;
+    public BusinessStatistics setMonthlyNewProducts(Long monthlyNewProducts) {
+        this.monthlyNewProducts = monthlyNewProducts;
         return this;
     }
 }

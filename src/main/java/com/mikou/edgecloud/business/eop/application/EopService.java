@@ -4,11 +4,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.mikou.edgecloud.business.eop.api.dto.*;
 import com.mikou.edgecloud.business.eop.domain.enums.EopStatus;
-import com.mikou.edgecloud.business.eop.domain.infrastructure.persistence.entity.EopAppEntity;
-import com.mikou.edgecloud.business.eop.domain.infrastructure.persistence.entity.EopBoundEntity;
-import com.mikou.edgecloud.business.eop.domain.infrastructure.persistence.entity.EopProductEntity;
-import com.mikou.edgecloud.business.eop.domain.infrastructure.persistence.entity.EopServiceEntity;
+import com.mikou.edgecloud.business.eop.infrastructure.persistence.entity.EopAppEntity;
+import com.mikou.edgecloud.business.eop.infrastructure.persistence.entity.EopBoundEntity;
+import com.mikou.edgecloud.business.eop.infrastructure.persistence.entity.EopProductEntity;
+import com.mikou.edgecloud.business.eop.infrastructure.persistence.entity.EopServiceEntity;
 import com.mikou.edgecloud.common.spi.NatsClient;
+import com.mikou.edgecloud.common.spi.PortAvailabilityChecker;
+import com.mikou.edgecloud.business.eop.domain.events.EopPortOccupyRequestedEvent;
+import com.mikou.edgecloud.business.eop.domain.events.EopPortReleaseRequestedEvent;
 import com.mikou.edgecloud.edge.api.dto.EdgeItemDto;
 import com.mikou.edgecloud.edge.api.dto.NicIpDto;
 import com.mikou.edgecloud.edge.domain.enums.EdgeStatus;
@@ -16,18 +19,19 @@ import com.mikou.edgecloud.edge.infrastructure.persistence.entity.EdgeEntity;
 import com.mikou.edgecloud.edge.infrastructure.persistence.entity.EdgeNicIpEntity;
 import com.mikou.edgecloud.edge.infrastructure.persistence.mapper.EdgeMapper;
 import com.mikou.edgecloud.edge.infrastructure.persistence.mapper.EdgeNicIpMapper;
+import com.mikou.edgecloud.edge.infrastructure.persistence.mapper.EdgeAreaMapper;
 import com.mikou.edgecloud.business.eop.domain.enums.EopDirection;
-import com.mikou.edgecloud.business.eop.domain.enums.EopOccupierType;
 import com.mikou.edgecloud.business.eop.domain.events.EopNotifyMessage;
 import com.mikou.edgecloud.business.eop.domain.events.EopServiceExpiredEvent;
-import com.mikou.edgecloud.business.eop.domain.infrastructure.persistence.mapper.EopAppMapper;
-import com.mikou.edgecloud.business.eop.domain.infrastructure.persistence.mapper.EopBoundMapper;
-import com.mikou.edgecloud.business.eop.domain.infrastructure.persistence.mapper.EopProductMapper;
-import com.mikou.edgecloud.business.eop.domain.infrastructure.persistence.mapper.EopServiceMapper;
+import com.mikou.edgecloud.business.eop.infrastructure.persistence.mapper.EopAppMapper;
+import com.mikou.edgecloud.business.eop.infrastructure.persistence.mapper.EopBoundMapper;
+import com.mikou.edgecloud.business.eop.infrastructure.persistence.mapper.EopProductMapper;
+import com.mikou.edgecloud.business.eop.infrastructure.persistence.mapper.EopServiceMapper;
+import org.springframework.context.ApplicationEventPublisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mikou.edgecloud.business.eop.domain.model.EopBoundParams;
 import com.mikou.edgecloud.business.eop.domain.model.EopServiceEntitlements;
-import com.mikou.edgecloud.business.domain.BusinessStatus;
+import com.mikou.edgecloud.business.domain.ProductStatus;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -43,33 +47,42 @@ import java.util.stream.Collectors;
 public class EopService {
 
     private final EopBoundMapper eopBoundMapper;
-    private final EopPortService eopPortService;
+    private final PortAvailabilityChecker portAvailabilityChecker;
+    private final ApplicationEventPublisher eventPublisher;
     private final EopServiceMapper eopServiceMapper;
     private final EopProductMapper eopProductMapper;
     private final EopAppMapper eopAppMapper;
     private final EdgeNicIpMapper edgeNicIpMapper;
     private final EdgeMapper edgeMapper;
+    private final EdgeAreaMapper regionMapper;
     private final ObjectMapper objectMapper;
     private final NatsClient natsClient;
+    private final com.mikou.edgecloud.account.infrastructure.persistence.mapper.AccountMapper accountMapper;
 
     public EopService(EopBoundMapper eopBoundMapper,
-                      EopPortService eopPortService,
+                      PortAvailabilityChecker portAvailabilityChecker,
+                      ApplicationEventPublisher eventPublisher,
                       EopServiceMapper eopServiceMapper,
                       EopProductMapper eopProductMapper,
                       EopAppMapper eopAppMapper,
                       EdgeNicIpMapper edgeNicIpMapper,
                       EdgeMapper edgeMapper,
+                      EdgeAreaMapper regionMapper,
                       NatsClient natsClient,
-                      ObjectMapper objectMapper) {
+                      ObjectMapper objectMapper,
+                      com.mikou.edgecloud.account.infrastructure.persistence.mapper.AccountMapper accountMapper) {
         this.eopBoundMapper = eopBoundMapper;
-        this.eopPortService = eopPortService;
+        this.portAvailabilityChecker = portAvailabilityChecker;
+        this.eventPublisher = eventPublisher;
         this.eopServiceMapper = eopServiceMapper;
         this.eopProductMapper = eopProductMapper;
         this.eopAppMapper = eopAppMapper;
         this.edgeNicIpMapper = edgeNicIpMapper;
         this.edgeMapper = edgeMapper;
+        this.regionMapper = regionMapper;
         this.natsClient = natsClient;
         this.objectMapper = objectMapper;
+        this.accountMapper = accountMapper;
     }
 
     @Transactional
@@ -97,7 +110,7 @@ public class EopService {
                 .setProductId(product.getId())
                 .setMonthlyPrice(product.getMonthlyPrice())
                 .setEntitlements(entitlements)
-                .setStatus(BusinessStatus.ACTIVE) // 初始状态为激活
+                .setStatus(ProductStatus.ACTIVE) // 初始状态为激活
                 .setExpiredAt(expiredAt)
                 .setCreatedAt(now)
                 .setUpdatedAt(now);
@@ -204,7 +217,7 @@ public class EopService {
         }
 
         // 4. 端口校验
-        if (!eopPortService.isPortAvailable(addrId, params.getPort())) {
+        if (!portAvailabilityChecker.isPortAvailable(addrId, params.getPort())) {
             throw new IllegalStateException(String.format("Port %d is already occupied", params.getPort()));
         }
 
@@ -223,10 +236,11 @@ public class EopService {
                 .setUpdatedAt(now);
 
         eopBoundMapper.insert(entity);
-        
-        // 5. 执行端口占用 (Inbound 独有) - 使用 insert 后的实体 ID 作为 occupierId
+
+        // 5. 发布端口占用事件（Edge 层监听并执行）
         if (params.getPort() != null) {
-             eopPortService.executeOccupyPort(addrId, params.getPort(), EopOccupierType.EOP_BOUND, entity.getId());
+            eventPublisher.publishEvent(
+                    new EopPortOccupyRequestedEvent(addrId, params.getPort(), "EOP_BOUND", entity.getId()));
         }
 
         // 通知 NATS
@@ -244,8 +258,8 @@ public class EopService {
 
         EopAppEntity app = eopAppMapper.selectById(bound.getEopId());
 
-        // 释放端口占用 (通过领域事件发起申请)
-        eopPortService.requestReleaseAllPortsByOccupier(EopOccupierType.EOP_BOUND, bound.getId());
+        // 发布端口释放事件（Edge 层监听并执行）
+        eventPublisher.publishEvent(new EopPortReleaseRequestedEvent("EOP_BOUND", bound.getId()));
 
         // 物理删除
         eopBoundMapper.deleteById(id);
@@ -326,7 +340,7 @@ public class EopService {
         EopServiceEntity service = getServiceByTag(tag);
         
         // 如果服务是暂停状态，续费后可能需要恢复
-        boolean wasSuspended = service.getStatus() == BusinessStatus.SUSPENDED;
+        boolean wasSuspended = service.getStatus() == ProductStatus.SUSPENDED;
         
         Instant currentExpiry = service.getExpiredAt();
         if (currentExpiry == null) {
@@ -339,7 +353,7 @@ public class EopService {
         service.setUpdatedAt(Instant.now());
         
         if (wasSuspended && newExpiry.isAfter(Instant.now())) {
-            service.setStatus(BusinessStatus.ACTIVE);
+            service.setStatus(ProductStatus.ACTIVE);
             resumeServiceBounds(service.getId());
         }
         
@@ -373,11 +387,11 @@ public class EopService {
         dtoPage.setRecords(result.getRecords().stream().map(s -> {
             EopProductEntity p = productMap.get(s.getProductId());
             return new EopServiceDto()
-                    .setTag(s.getTag())
+                    .setServiceTag(s.getTag())
                     .setProductName(p != null ? p.getName() : "Unknown")
                     .setProductTag(p != null ? p.getTag() : null)
                     .setMonthlyPrice(s.getMonthlyPrice())
-                    .setStatus(s.getStatus())
+                    .setProductStatus(s.getStatus())
                     .setEntitlements(s.getEntitlements())
                     .setExpiredAt(s.getExpiredAt())
                     .setCreatedAt(s.getCreatedAt());
@@ -389,7 +403,7 @@ public class EopService {
     /**
      * 查询服务列表（支持筛选条件）- 供管理后台使用
      */
-    public Page<EopServiceDto> listServicesWithFilter(UUID ownerId, BusinessStatus status, Pageable pageable) {
+    public Page<EopServiceDto> listServicesWithFilter(UUID ownerId, ProductStatus status, Pageable pageable) {
         Page<EopServiceEntity> pageParam = new Page<>(pageable.getPageNumber() + 1, pageable.getPageSize());
         
         LambdaQueryWrapper<EopServiceEntity> wrapper = new LambdaQueryWrapper<EopServiceEntity>()
@@ -413,21 +427,67 @@ public class EopService {
         Map<Integer, EopProductEntity> productMap = eopProductMapper.selectBatchIds(productIds)
                 .stream().collect(Collectors.toMap(EopProductEntity::getId, p -> p));
 
+        // 关联账户信息
+        Map<UUID, com.mikou.edgecloud.business.api.dto.AccountSimpleDto> accountMap = buildAccountMap(ownerId, result.getRecords());
+
         Page<EopServiceDto> dtoPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
         dtoPage.setRecords(result.getRecords().stream().map(s -> {
             EopProductEntity p = productMap.get(s.getProductId());
+            com.mikou.edgecloud.business.api.dto.AccountSimpleDto accountDto = accountMap.get(s.getOwnerId());
             return new EopServiceDto()
-                    .setTag(s.getTag())
+                    .setServiceTag(s.getTag())
                     .setProductName(p != null ? p.getName() : "Unknown")
                     .setProductTag(p != null ? p.getTag() : null)
                     .setMonthlyPrice(s.getMonthlyPrice())
-                    .setStatus(s.getStatus())
+                    .setProductStatus(s.getStatus())
                     .setEntitlements(s.getEntitlements())
                     .setExpiredAt(s.getExpiredAt())
-                    .setCreatedAt(s.getCreatedAt());
+                    .setCreatedAt(s.getCreatedAt())
+                    .setAccount(accountDto);
         }).collect(Collectors.toList()));
         
         return dtoPage;
+    }
+
+    /**
+     * 构建账户信息映射
+     * 如果指定了 ownerId，只查询一次；否则批量查询所有相关账户
+     */
+    private Map<UUID, com.mikou.edgecloud.business.api.dto.AccountSimpleDto> buildAccountMap(UUID ownerId, List<EopServiceEntity> services) {
+        if (ownerId != null) {
+            // 指定了 accountId，只查询一次
+            com.mikou.edgecloud.account.infrastructure.persistence.entity.AccountEntity account = 
+                    accountMapper.selectById(ownerId);
+            if (account != null) {
+                com.mikou.edgecloud.business.api.dto.AccountSimpleDto dto = new com.mikou.edgecloud.business.api.dto.AccountSimpleDto()
+                        .setAccountId(account.getId())
+                        .setUsername(account.getUsername())
+                        .setEmail(account.getEmail());
+                return Map.of(ownerId, dto);
+            }
+            return Map.of();
+        } else {
+            // 没有指定 accountId，批量查询所有相关账户
+            List<UUID> ownerIds = services.stream()
+                    .map(EopServiceEntity::getOwnerId)
+                    .distinct()
+                    .collect(Collectors.toList());
+            
+            if (ownerIds.isEmpty()) {
+                return Map.of();
+            }
+            
+            List<com.mikou.edgecloud.account.infrastructure.persistence.entity.AccountEntity> accounts = 
+                    accountMapper.selectBatchIds(ownerIds);
+            
+            return accounts.stream().collect(Collectors.toMap(
+                    com.mikou.edgecloud.account.infrastructure.persistence.entity.AccountEntity::getId,
+                    account -> new com.mikou.edgecloud.business.api.dto.AccountSimpleDto()
+                            .setAccountId(account.getId())
+                            .setUsername(account.getUsername())
+                            .setEmail(account.getEmail())
+            ));
+        }
     }
 
     public Page<EopBoundDto> listBounds(UUID ownerId, UUID eopTag, UUID serviceTag, Pageable pageable) {
@@ -499,9 +559,34 @@ public class EopService {
                     .setId(edge.getId())
                     .setEdgeTag(edge.getEdgeTag())
                     .setName(edge.getName())
-                    .setRegionId(edge.getRegionId())
                     .setStatus(edge.getStatus())
-                    .setOnline(edge.getStatus() == EdgeStatus.ENABLED);
+                    .setOnline(edge.getStatus() == EdgeStatus.ENABLED)
+                    .setFeatures(edge.getFeatures())
+                    .setCreatedAt(edge.getCreatedAt())
+                    .setUpdatedAt(edge.getUpdatedAt())
+                    .setCpuCores(edge.getCpuCores())
+                    .setCpuModel(edge.getCpuModel())
+                    .setTotalMemory(edge.getTotalMemory())
+                    .setOsType(edge.getOsType())
+                    .setOsVersion(edge.getOsVersion())
+                    .setOsArch(edge.getOsArch())
+                    .setEdgeVersion(edge.getEdgeVersion());
+            
+            // 查询并设置区域信息
+            if (edge.getRegionId() != null) {
+                com.mikou.edgecloud.edge.infrastructure.persistence.entity.EdgeAreaEntity regionEntity = 
+                        regionMapper.selectById(edge.getRegionId());
+                if (regionEntity != null) {
+                    com.mikou.edgecloud.edge.api.dto.RegionTreeDto regionDto = 
+                            new com.mikou.edgecloud.edge.api.dto.RegionTreeDto()
+                            .setId(regionEntity.getId())
+                            .setCode(regionEntity.getCode())
+                            .setName(regionEntity.getName())
+                            .setLevel(regionEntity.getLevel());
+                    edgeDto.setRegion(regionDto);
+                }
+            }
+            
             dto.setEdge(edgeDto);
         }
         return dto;

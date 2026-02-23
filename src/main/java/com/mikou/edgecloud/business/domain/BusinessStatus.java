@@ -1,41 +1,33 @@
 package com.mikou.edgecloud.business.domain;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
-import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * 产品状态枚举
- * 用于表示产品实例的生命周期状态
+ * 业务状态枚举
+ * 业务只有启用和停用两个状态
  */
 public enum BusinessStatus {
     /**
-     * 激活 - 产品正常运行中
+     * 启用
      */
-    ACTIVE(1, "激活"),
+    ENABLED(1, "启用"),
     
     /**
-     * 暂停 - 产品被暂停（如欠费、手动暂停等）
+     * 停用
      */
-    SUSPENDED(2, "暂停"),
-    
-    /**
-     * 过期 - 产品已过期
-     */
-    EXPIRED(3, "过期");
+    DISABLED(2, "停用");
     
     @EnumValue
-    @JsonValue
-    private final Integer id;
-    
+    private final int code;
     private final String displayName;
     
-    BusinessStatus(int id, String displayName) {
-        this.id = id;
+    BusinessStatus(int code, String displayName) {
+        this.code = code;
         this.displayName = displayName;
     }
     
-    public Integer getId() {
-        return id;
+    public int getCode() {
+        return code;
     }
     
     public String getDisplayName() {

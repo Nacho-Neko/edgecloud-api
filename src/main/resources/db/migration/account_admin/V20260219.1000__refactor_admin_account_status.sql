@@ -11,7 +11,7 @@ CREATE INDEX idx_account_admin_account_status ON account_admin(account_status);
 -- 3. 更新默认值约束
 -- 注意：账户状态有 ENABLED(1)、DISABLED(2)、DELETED(3) 三个状态，默认为 ENABLED
 -- 删除只能标记为 DELETED，不能真正删除记录
-ALTER TABLE account_admin ALTER COLUMN account_status SET DEFAULT 'ENABLED';
+ALTER TABLE account_admin ALTER COLUMN account_status SET DEFAULT '1';
 
 COMMENT ON COLUMN account_admin.account_status IS '账户状态：1-启用(ENABLED)，2-停用(DISABLED)，3-已删除(DELETED，软删除)';
 COMMENT ON COLUMN admin_role.status IS '角色状态：1-启用(ENABLED)，2-停用(DISABLED)，3-已删除(DELETED，软删除)';

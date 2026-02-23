@@ -2,8 +2,8 @@ package com.mikou.edgecloud.business.eop.application;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.mikou.edgecloud.common.spi.ResourceValidator;
-import com.mikou.edgecloud.business.eop.domain.infrastructure.persistence.entity.EopAppEntity;
-import com.mikou.edgecloud.business.eop.domain.infrastructure.persistence.mapper.EopAppMapper;
+import com.mikou.edgecloud.business.eop.infrastructure.persistence.entity.EopAppEntity;
+import com.mikou.edgecloud.business.eop.infrastructure.persistence.mapper.EopAppMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;

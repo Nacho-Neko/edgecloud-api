@@ -1,10 +1,10 @@
 package com.mikou.edgecloud.business.eop.application;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.mikou.edgecloud.business.domain.BusinessStatus;
+import com.mikou.edgecloud.business.domain.ProductStatus;
 import com.mikou.edgecloud.business.eop.domain.events.EopServiceExpiredEvent;
-import com.mikou.edgecloud.business.eop.domain.infrastructure.persistence.entity.EopServiceEntity;
-import com.mikou.edgecloud.business.eop.domain.infrastructure.persistence.mapper.EopServiceMapper;
+import com.mikou.edgecloud.business.eop.infrastructure.persistence.entity.EopServiceEntity;
+import com.mikou.edgecloud.business.eop.infrastructure.persistence.mapper.EopServiceMapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -37,7 +37,7 @@ public class EopServiceScheduler {
         List<EopServiceEntity> expiredServices = eopServiceMapper.selectList(new LambdaQueryWrapper<EopServiceEntity>()
                 .isNotNull(EopServiceEntity::getExpiredAt)
                 .lt(EopServiceEntity::getExpiredAt, now)
-                .eq(EopServiceEntity::getStatus, BusinessStatus.ACTIVE)
+                .eq(EopServiceEntity::getStatus, ProductStatus.ACTIVE)
                 .isNull(EopServiceEntity::getRemovedAt));
 
         for (EopServiceEntity service : expiredServices) {
@@ -55,7 +55,7 @@ public class EopServiceScheduler {
         EopServiceEntity service = eopServiceMapper.selectOne(new LambdaQueryWrapper<EopServiceEntity>()
                 .eq(EopServiceEntity::getTag, serviceTag)
                 .isNull(EopServiceEntity::getRemovedAt));
-        if (service != null && service.getStatus() != BusinessStatus.SUSPENDED) {
+        if (service != null && service.getStatus() != ProductStatus.SUSPENDED) {
             suspendService(service);
         }
     }
@@ -68,7 +68,7 @@ public class EopServiceScheduler {
         eventPublisher.publishEvent(new EopServiceExpiredEvent(service.getId(), service.getTag()));
 
         // 更新服务状态为过期
-        service.setStatus(BusinessStatus.EXPIRED);
+        service.setStatus(ProductStatus.EXPIRED);
         service.setUpdatedAt(Instant.now());
         eopServiceMapper.updateById(service);
     }
@@ -81,7 +81,7 @@ public class EopServiceScheduler {
         eventPublisher.publishEvent(new EopServiceExpiredEvent(service.getId(), service.getTag()));
 
         // 更新服务状态为暂停
-        service.setStatus(BusinessStatus.SUSPENDED);
+        service.setStatus(ProductStatus.SUSPENDED);
         service.setUpdatedAt(Instant.now());
         eopServiceMapper.updateById(service);
     }

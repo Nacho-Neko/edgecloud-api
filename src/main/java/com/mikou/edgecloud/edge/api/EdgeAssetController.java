@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/edge/assets")
+@RequestMapping("/api/admin/edge/asset")
 @Tag(name = "EdgeAsset")
 public class EdgeAssetController {
 
@@ -21,7 +21,7 @@ public class EdgeAssetController {
         this.assetService = assetService;
     }
 
-    @GetMapping("/nic/{edgeTag}")
+    @GetMapping("nic/{edgeTag}")
     @Operation(summary = "获取 Edge 的网卡和 IP 列表")
     public ResponseEntity<List<EdgeNicDto>> getEdgeNics(@PathVariable String edgeTag) {
         List<EdgeNicDto> nics = assetService.getEdgeNics(edgeTag);

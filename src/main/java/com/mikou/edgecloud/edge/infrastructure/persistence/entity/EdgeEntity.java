@@ -28,9 +28,33 @@ public class EdgeEntity {
     @TableField(value = "status")
     private EdgeStatus status;
 
-    // 新增：能力配置（JSON 存储）
+    // 能力配置（JSON 存储）
     @TableField(value = "features", typeHandler = JacksonTypeHandler.class)
     private EdgeFeatures features;
+
+    // 硬件信息
+    @TableField(value = "cpu_cores")
+    private Integer cpuCores;
+
+    @TableField(value = "cpu_model")
+    private String cpuModel;
+
+    @TableField(value = "total_memory")
+    private Long totalMemory;  // 字节
+
+    // 操作系统信息
+    @TableField(value = "os_type")
+    private String osType;
+
+    @TableField(value = "os_version")
+    private String osVersion;
+
+    @TableField(value = "os_arch")
+    private String osArch;
+
+    // Edge 程序版本
+    @TableField(value = "edge_version")
+    private String edgeVersion;
 
     @TableField(value = "created_at")
     private Instant createdAt;
@@ -40,8 +64,6 @@ public class EdgeEntity {
 
     public EdgeEntity() {
     }
-
-    // ... existing getters/setters ...
 
     public EdgeFeatures getFeatures() {
         return features;
@@ -112,6 +134,69 @@ public class EdgeEntity {
 
     public EdgeEntity setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+        return this;
+    }
+
+    public Integer getCpuCores() {
+        return cpuCores;
+    }
+
+    public EdgeEntity setCpuCores(Integer cpuCores) {
+        this.cpuCores = cpuCores;
+        return this;
+    }
+
+    public String getCpuModel() {
+        return cpuModel;
+    }
+
+    public EdgeEntity setCpuModel(String cpuModel) {
+        this.cpuModel = cpuModel;
+        return this;
+    }
+
+    public Long getTotalMemory() {
+        return totalMemory;
+    }
+
+    public EdgeEntity setTotalMemory(Long totalMemory) {
+        this.totalMemory = totalMemory;
+        return this;
+    }
+
+    public String getOsType() {
+        return osType;
+    }
+
+    public EdgeEntity setOsType(String osType) {
+        this.osType = osType;
+        return this;
+    }
+
+    public String getOsVersion() {
+        return osVersion;
+    }
+
+    public EdgeEntity setOsVersion(String osVersion) {
+        this.osVersion = osVersion;
+        return this;
+    }
+
+    public String getOsArch() {
+        return osArch;
+    }
+
+    public EdgeEntity setOsArch(String osArch) {
+        this.osArch = osArch;
+        return this;
+    }
+
+    public String getEdgeVersion() {
+        return edgeVersion;
+    }
+
+    public EdgeEntity setEdgeVersion(String edgeVersion) {
+        this.edgeVersion = edgeVersion;
         return this;
     }
 }

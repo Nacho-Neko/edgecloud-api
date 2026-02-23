@@ -17,6 +17,8 @@ public abstract class EdgeConverter {
     protected EdgeRegistry edgeRegistry;
 
     @Mapping(target = "online", source = "edgeTag", qualifiedByName = "isOnline")
+    @Mapping(target = "region", ignore = true)
+    @Mapping(target = "latestStatus", ignore = true)
     public abstract EdgeItemDto toItemDto(EdgeEntity entity);
 
     @Mapping(target = "online", source = "edgeTag", qualifiedByName = "isOnline")

@@ -1,6 +1,7 @@
 package com.mikou.edgecloud.edge.api.dto;
 
 import com.mikou.edgecloud.edge.domain.enums.EdgeStatus;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,6 +16,10 @@ public class EdgeDetailDto {
 
     // 修改：返回网卡列表（每个网卡包含其 IP 列表）
     private List<EdgeNicDto> nics;
+    
+    // 时间信息
+    private Instant createdAt;
+    private Instant updatedAt;
 
     public UUID getEdgeTag() {
         return edgeTag;
@@ -78,4 +83,10 @@ public class EdgeDetailDto {
         this.nics = nics;
         return this;
     }
+    
+    public Instant getCreatedAt() { return createdAt; }
+    public EdgeDetailDto setCreatedAt(Instant createdAt) { this.createdAt = createdAt; return this; }
+    
+    public Instant getUpdatedAt() { return updatedAt; }
+    public EdgeDetailDto setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; return this; }
 }

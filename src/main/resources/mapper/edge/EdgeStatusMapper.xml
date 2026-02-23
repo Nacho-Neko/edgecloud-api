@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mikou.edgecloud.edge.infrastructure.persistence.mapper.EdgeStatusMapper">
+
+    <!-- ResultMap 定义 -->
+    <resultMap id="EdgeStatusResultMap" type="com.mikou.edgecloud.edge.infrastructure.persistence.entity.EdgeStatusEntity">
+        <id property="edgeId" column="edge_id"/>
+        <id property="sampleTime" column="sample_time"/>
+        <result property="cpuUsage" column="cpu_usage"/>
+        <result property="usedMemory" column="memory_usage"/>
+        <result property="totalMemory" column="total_memory"/>
+    </resultMap>
+
+    <!-- 查询最新一条监控数据 -->
+    <select id="findLatestByEdgeId" resultMap="EdgeStatusResultMap">
+        SELECT 
+            edge_id, 
+            sample_time, 
+            cpu_usage,
+            CASE 
+                WHEN total_memory > 0 THEN (used_memory * 100.0 / total_memory)
+                ELSE 0
+            END as memory_usage,
+            total_memory
+        FROM edge_status
+        WHERE edge_id = #{edgeId}
+        ORDER BY sample_time DESC
+        LIMIT 1
+    </select>
+
+    <!-- 查询指定时间范围内的监控数据 -->
+    <select id="findByEdgeIdAndTimeRange" resultMap="EdgeStatusResultMap">
+        SELECT 
+            edge_id, 
+            sample_time, 
+            cpu_usage,
+            CASE 
+                WHEN total_memory > 0 THEN (used_memory * 100.0 / total_memory)
+                ELSE 0
+            END as memory_usage,
+            total_memory
+        FROM edge_status
+        WHERE edge_id = #{edgeId}
+          AND sample_time &gt;= #{startTime}
+          AND sample_time &lt;= #{endTime}
+        ORDER BY sample_time ASC
+    </select>
+
+    <!-- 
+        查询指定时间范围内的监控数据（带采样）
+        时序表采样策略：使用 ROW_NUMBER 进行均匀采样
+    -->
+    <select id="findByEdgeIdAndTimeRangeWithLimit" resultMap="EdgeStatusResultMap">
+        WITH numbered_data AS (
+            SELECT 
+                edge_id,
+                sample_time,
+                cpu_usage,
+                used_memory,
+                total_memory,
+                ROW_NUMBER() OVER (ORDER BY sample_time) as row_num,
+                COUNT(*) OVER () as total_count
+            FROM edge_status
+            WHERE edge_id = #{edgeId}
+              AND sample_time &gt;= #{startTime}
+              AND sample_time &lt;= #{endTime}
+        )
+        SELECT 
+            edge_id,
+            sample_time,
+            cpu_usage,
+            used_memory,
+            total_memory
+        FROM numbered_data
+        WHERE total_count &lt;= #{limit}
+           OR MOD(row_num - 1, GREATEST(CEIL(total_count::numeric / #{limit}), 1)) = 0
+        ORDER BY sample_time ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 
+        智能采样查询：根据时间间隔分组，取每组的最大值
+        用于问题排查，最大值更能反映峰值情况
+    -->
+    <select id="findByEdgeIdAndTimeRangeWithSampling" resultMap="EdgeStatusResultMap">
+        <choose>
+            <!-- 5分钟间隔 -->
+            <when test='samplingInterval == "5 minutes"'>
+                SELECT 
+                    edge_id,
+                    date_trunc('hour', sample_time) + 
+                    INTERVAL '5 minutes' * FLOOR(EXTRACT(MINUTE FROM sample_time) / 5) as sample_time,
+                    MAX(cpu_usage) as cpu_usage,
+                    MAX(CASE WHEN total_memory > 0 THEN (used_memory * 100.0 / total_memory) ELSE 0 END) as memory_usage,
+                    MAX(total_memory) as total_memory
+                FROM edge_status
+                WHERE edge_id = #{edgeId}
+                  AND sample_time &gt;= #{startTime}
+                  AND sample_time &lt;= #{endTime}
+                GROUP BY edge_id, 
+                         date_trunc('hour', sample_time) + 
+                         INTERVAL '5 minutes' * FLOOR(EXTRACT(MINUTE FROM sample_time) / 5)
+                ORDER BY sample_time ASC
+            </when>
+            <!-- 10分钟间隔 -->
+            <when test='samplingInterval == "10 minutes"'>
+                SELECT 
+                    edge_id,
+                    date_trunc('hour', sample_time) + 
+                    INTERVAL '10 minutes' * FLOOR(EXTRACT(MINUTE FROM sample_time) / 10) as sample_time,
+                    MAX(cpu_usage) as cpu_usage,
+                    MAX(CASE WHEN total_memory > 0 THEN (used_memory * 100.0 / total_memory) ELSE 0 END) as memory_usage,
+                    MAX(total_memory) as total_memory
+                FROM edge_status
+                WHERE edge_id = #{edgeId}
+                  AND sample_time &gt;= #{startTime}
+                  AND sample_time &lt;= #{endTime}
+                GROUP BY edge_id, 
+                         date_trunc('hour', sample_time) + 
+                         INTERVAL '10 minutes' * FLOOR(EXTRACT(MINUTE FROM sample_time) / 10)
+                ORDER BY sample_time ASC
+            </when>
+            <!-- 30分钟间隔 -->
+            <when test='samplingInterval == "30 minutes"'>
+                SELECT 
+                    edge_id,
+                    date_trunc('hour', sample_time) + 
+                    INTERVAL '30 minutes' * FLOOR(EXTRACT(MINUTE FROM sample_time) / 30) as sample_time,
+                    MAX(cpu_usage) as cpu_usage,
+                    MAX(CASE WHEN total_memory > 0 THEN (used_memory * 100.0 / total_memory) ELSE 0 END) as memory_usage,
+                    MAX(total_memory) as total_memory
+                FROM edge_status
+                WHERE edge_id = #{edgeId}
+                  AND sample_time &gt;= #{startTime}
+                  AND sample_time &lt;= #{endTime}
+                GROUP BY edge_id, 
+                         date_trunc('hour', sample_time) + 
+                         INTERVAL '30 minutes' * FLOOR(EXTRACT(MINUTE FROM sample_time) / 30)
+                ORDER BY sample_time ASC
+            </when>
+            <!-- 1小时间隔 -->
+            <when test='samplingInterval == "1 hour"'>
+                SELECT 
+                    edge_id,
+                    date_trunc('hour', sample_time) as sample_time,
+                    MAX(cpu_usage) as cpu_usage,
+                    MAX(CASE 
+                        WHEN total_memory > 0 THEN (used_memory * 100.0 / total_memory)
+                        ELSE 0
+                    END) as memory_usage,
+                    MAX(total_memory) as total_memory
+                FROM edge_status
+                WHERE edge_id = #{edgeId}
+                  AND sample_time &gt;= #{startTime}
+                  AND sample_time &lt;= #{endTime}
+                GROUP BY edge_id, date_trunc('hour', sample_time)
+                ORDER BY sample_time ASC
+            </when>
+            <!-- 2小时间隔 -->
+            <when test='samplingInterval == "2 hours"'>
+                SELECT 
+                    edge_id,
+                    date_trunc('day', sample_time) + 
+                    INTERVAL '2 hours' * FLOOR(EXTRACT(HOUR FROM sample_time) / 2) as sample_time,
+                    MAX(cpu_usage) as cpu_usage,
+                    MAX(CASE WHEN total_memory > 0 THEN (used_memory * 100.0 / total_memory) ELSE 0 END) as memory_usage,
+                    MAX(total_memory) as total_memory
+                FROM edge_status
+                WHERE edge_id = #{edgeId}
+                  AND sample_time &gt;= #{startTime}
+                  AND sample_time &lt;= #{endTime}
+                GROUP BY edge_id, 
+                         date_trunc('day', sample_time) + 
+                         INTERVAL '2 hours' * FLOOR(EXTRACT(HOUR FROM sample_time) / 2)
+                ORDER BY sample_time ASC
+            </when>
+            <!-- 6小时间隔 -->
+            <when test='samplingInterval == "6 hours"'>
+                SELECT 
+                    edge_id,
+                    date_trunc('day', sample_time) + 
+                    INTERVAL '6 hours' * FLOOR(EXTRACT(HOUR FROM sample_time) / 6) as sample_time,
+                    MAX(cpu_usage) as cpu_usage,
+                    MAX(CASE WHEN total_memory > 0 THEN (used_memory * 100.0 / total_memory) ELSE 0 END) as memory_usage,
+                    MAX(total_memory) as total_memory
+                FROM edge_status
+                WHERE edge_id = #{edgeId}
+                  AND sample_time &gt;= #{startTime}
+                  AND sample_time &lt;= #{endTime}
+                GROUP BY edge_id, 
+                         date_trunc('day', sample_time) + 
+                         INTERVAL '6 hours' * FLOOR(EXTRACT(HOUR FROM sample_time) / 6)
+                ORDER BY sample_time ASC
+            </when>
+            <!-- 12小时间隔 -->
+            <when test='samplingInterval == "12 hours"'>
+                SELECT 
+                    edge_id,
+                    date_trunc('day', sample_time) + 
+                    INTERVAL '12 hours' * FLOOR(EXTRACT(HOUR FROM sample_time) / 12) as sample_time,
+                    MAX(cpu_usage) as cpu_usage,
+                    MAX(CASE 
+                        WHEN total_memory > 0 THEN (used_memory * 100.0 / total_memory)
+                        ELSE 0
+                    END) as memory_usage,
+                    MAX(total_memory) as total_memory
+                FROM edge_status
+                WHERE edge_id = #{edgeId}
+                  AND sample_time &gt;= #{startTime}
+                  AND sample_time &lt;= #{endTime}
+                GROUP BY edge_id, 
+                         date_trunc('day', sample_time) + 
+                         INTERVAL '12 hours' * FLOOR(EXTRACT(HOUR FROM sample_time) / 12)
+                ORDER BY sample_time ASC
+            </when>
+            <when test='samplingInterval == "1 day"'>
+                SELECT 
+                    edge_id,
+                    date_trunc('day', sample_time) as sample_time,
+                    MAX(cpu_usage) as cpu_usage,
+                    MAX(CASE 
+                        WHEN total_memory > 0 THEN (used_memory * 100.0 / total_memory)
+                        ELSE 0
+                    END) as memory_usage,
+                    MAX(total_memory) as total_memory
+                FROM edge_status
+                WHERE edge_id = #{edgeId}
+                  AND sample_time &gt;= #{startTime}
+                  AND sample_time &lt;= #{endTime}
+                GROUP BY edge_id, date_trunc('day', sample_time)
+                ORDER BY sample_time ASC
+            </when>
+            <otherwise>
+                <!-- 默认按小时 -->
+                SELECT 
+                    edge_id,
+                    date_trunc('hour', sample_time) as sample_time,
+                    MAX(cpu_usage) as cpu_usage,
+                    MAX(CASE 
+                        WHEN total_memory > 0 THEN (used_memory * 100.0 / total_memory)
+                        ELSE 0
+                    END) as memory_usage,
+                    MAX(total_memory) as total_memory
+                FROM edge_status
+                WHERE edge_id = #{edgeId}
+                  AND sample_time &gt;= #{startTime}
+                  AND sample_time &lt;= #{endTime}
+                GROUP BY edge_id, date_trunc('hour', sample_time)
+                ORDER BY sample_time ASC
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 查询所有监控数据（调试用） -->
+    <select id="findAllByEdgeId" resultMap="EdgeStatusResultMap">
+        SELECT 
+            edge_id, 
+            sample_time, 
+            cpu_usage,
+            CASE 
+                WHEN total_memory > 0 THEN (used_memory * 100.0 / total_memory)
+                ELSE 0
+            END as memory_usage,
+            total_memory
+        FROM edge_status
+        WHERE edge_id = #{edgeId}
+        ORDER BY sample_time DESC
+        LIMIT 100
+    </select>
+
+    <!-- 统计监控数据总数 -->
+    <select id="countByEdgeId" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM edge_status
+        WHERE edge_id = #{edgeId}
+    </select>
+
+    <!-- 统计指定时间范围内的数据点数量 -->
+    <select id="countByEdgeIdAndTimeRange" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM edge_status
+        WHERE edge_id = #{edgeId}
+          AND sample_time &gt;= #{startTime}
+          AND sample_time &lt;= #{endTime}
+    </select>
+
+</mapper>

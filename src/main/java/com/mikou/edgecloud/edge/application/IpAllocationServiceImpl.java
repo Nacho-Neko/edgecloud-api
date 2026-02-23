@@ -5,14 +5,16 @@ import com.mikou.edgecloud.edge.domain.service.IpAllocationService;
 import com.mikou.edgecloud.edge.domain.enums.IpStatus;
 import com.mikou.edgecloud.edge.infrastructure.persistence.entity.EdgeNicIpEntity;
 import com.mikou.edgecloud.edge.infrastructure.persistence.mapper.EdgeNicIpMapper;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-@Service
+/**
+ * IP 分配服务实现
+ * 通过 EdgeConfig 配置类进行 Bean 注册
+ */
 public class IpAllocationServiceImpl implements IpAllocationService {
 
     private final EdgeNicIpMapper ipMapper;

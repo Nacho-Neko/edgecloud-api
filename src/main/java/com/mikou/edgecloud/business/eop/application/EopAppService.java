@@ -12,8 +12,6 @@ import java.util.UUID;
 public interface EopAppService {
     Page<EopAppDto> listApps(EdgeListQuery query, Pageable pageable);
     EopAppDto updateSettings(UUID eopTag, EopSettings settings);
-    void createProtocol(UUID eopTag, String protocol, EopSettings.ProtocolListener listener);
-    void destroyProtocol(UUID eopTag, String protocol, Integer port);
     Page<EopBoundDto> listBoundsByEopTag(UUID eopTag, Pageable pageable);
     void syncApps();
 }
