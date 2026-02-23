@@ -1,0 +1,2 @@
+-- V20260223.1200__rename_eop_port_occupation_to_edge_ip_port_occupation.sql
+ALTER TABLE eop_port_occupation RENAME TO edge_ip_port_occupation;
