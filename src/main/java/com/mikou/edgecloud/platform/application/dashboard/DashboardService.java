@@ -86,8 +86,8 @@ public class DashboardService {
         
         overview.setTotalBusinesses((long) businessAggregateService.getAllBusinesses().size());
         overview.setRunningBusinesses(businessAggregateService.getRunningBusinessCount());
-        overview.setTotalRevenue(businessAggregateService.getTotalRevenue());
-        overview.setTotalUsers(businessAggregateService.getTotalUsers());
+        overview.setActiveProducts(businessAggregateService.getTotalActiveProducts());
+        overview.setMonthlyNewProducts(businessAggregateService.getTotalMonthlyNewProducts());
         
         return overview;
     }
@@ -109,11 +109,8 @@ public class DashboardService {
             
             var stats = businessInfo.getStatistics();
             if (stats != null) {
-                detail.setTotalUsers(stats.getTotalUsers());
-                detail.setActiveUsers(stats.getActiveUsers());
-                detail.setTotalOrders(stats.getTotalOrders());
-                detail.setTotalRevenue(stats.getTotalRevenue());
-                detail.setCustomMetrics(stats.getCustomMetrics());
+                detail.setActiveProducts(stats.getActiveProducts());
+                detail.setMonthlyNewProducts(stats.getMonthlyNewProducts());
             }
             
             details.put(businessInfo.getCode(), detail);

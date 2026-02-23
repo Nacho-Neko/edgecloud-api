@@ -4,10 +4,10 @@ package com.mikou.edgecloud.platform.api.dto;
  * 业务总览统计
  */
 public class BusinessOverviewDto {
-    private Long totalBusinesses;
-    private Long runningBusinesses;
-    private Long totalRevenue;
-    private Long totalUsers;
+    private Long totalBusinesses;       // 总业务数
+    private Long runningBusinesses;     // 运行中的业务数
+    private Long activeProducts;        // 激活的产品总数
+    private Long monthlyNewProducts;    // 本月新增产品总数
     
     public Long getTotalBusinesses() {
         return totalBusinesses;
@@ -27,21 +27,21 @@ public class BusinessOverviewDto {
         return this;
     }
     
-    public Long getTotalRevenue() {
-        return totalRevenue;
+    public Long getActiveProducts() {
+        return activeProducts;
     }
     
-    public BusinessOverviewDto setTotalRevenue(Long totalRevenue) {
-        this.totalRevenue = totalRevenue;
+    public BusinessOverviewDto setActiveProducts(Long activeProducts) {
+        this.activeProducts = activeProducts;
         return this;
     }
     
-    public Long getTotalUsers() {
-        return totalUsers;
+    public Long getMonthlyNewProducts() {
+        return monthlyNewProducts;
     }
     
-    public BusinessOverviewDto setTotalUsers(Long totalUsers) {
-        this.totalUsers = totalUsers;
+    public BusinessOverviewDto setMonthlyNewProducts(Long monthlyNewProducts) {
+        this.monthlyNewProducts = monthlyNewProducts;
         return this;
     }
 }
