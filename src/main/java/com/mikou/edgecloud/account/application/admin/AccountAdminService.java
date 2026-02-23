@@ -7,7 +7,8 @@ import com.mikou.edgecloud.account.infrastructure.persistence.entity.AccountEnti
 import com.mikou.edgecloud.account.infrastructure.persistence.entity.AccountKycEntity;
 import com.mikou.edgecloud.account.infrastructure.persistence.mapper.AccountKycMapper;
 import com.mikou.edgecloud.account.infrastructure.persistence.mapper.AccountMapper;
-import com.mikou.edgecloud.business.eop.api.dto.EopServiceDto;
+import com.mikou.edgecloud.business.api.dto.BusinessServiceDto;
+import com.mikou.edgecloud.business.domain.ProductStatus;
 import com.mikou.edgecloud.business.eop.application.EopService;
 import com.mikou.edgecloud.business.domain.BusinessStatus;
 import org.springframework.data.domain.PageRequest;
@@ -96,38 +97,5 @@ public class AccountAdminService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 查询 Business 服务列表 - 支持筛选条件
-     * 通过各业务应用服务层完成调用
-     * 
-     * @param accountId 账户ID（可选）
-     * @param businessType 业务类型（可选），如 "EOP"
-     * @param status 服务状态（可选）
-     * @param page 页码
-     * @param size 每页大小
-     * @return 分页的服务列表
-     */
-    public Page<EopServiceDto> listBusinessServices(UUID accountId, String businessType, 
-                                                    BusinessStatus status, int page, int size) {
-        // 如果指定了 accountId，验证账户是否存在
-        if (accountId != null) {
-            AccountEntity account = accountMapper.selectById(accountId);
-            if (account == null) {
-                throw new IllegalArgumentException("Account not found: " + accountId);
-            }
-        }
 
-        // 根据业务类型动态调用对应的服务层
-        // 目前只实现了 EOP，其他业务类型可以后续扩展
-        if (businessType == null || "EOP".equalsIgnoreCase(businessType)) {
-            // 通过 EOP 应用服务层查询服务列表
-            Pageable pageable = PageRequest.of(page, size);
-            return eopService.listServicesWithFilter(accountId, status, pageable);
-        } else {
-            // 其他业务类型暂未实现，返回空结果
-            Page<EopServiceDto> emptyPage = new Page<>(page + 1, size, 0);
-            emptyPage.setRecords(List.of());
-            return emptyPage;
-        }
-    }
 }
