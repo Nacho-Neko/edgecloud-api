@@ -10,10 +10,10 @@ import java.time.Instant;
 
 /**
  * IP 端口占用记录（上移自 EOP 层，现归属 Edge 层统一管理）
- * 对应表: eop_port_occupation
+ * 对应表: edge_ip_port_occupation
  * 所有业务（EOP、CDN、Edge传输层）都向此表登记端口占用，互相感知。
  */
-@TableName("eop_port_occupation")
+@TableName("edge_ip_port_occupation")
 public class EdgeIpPortOccupationEntity {
 
     @TableId(value = "id", type = IdType.AUTO)

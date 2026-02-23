@@ -52,8 +52,6 @@ public class EopNotifyMessage {
         this.timestamp = timestamp;
     }
 
-    public static final String ACTION_CREATE_TRANSFER = "CREATE_TRANSFER";
-    public static final String ACTION_DELETE_TRANSFER = "DELETE_TRANSFER";
     public static final String ACTION_CREATE_BOUND = "CREATE_BOUND";
     public static final String ACTION_DELETE_BOUND = "DELETE_BOUND";
     public static final String ACTION_STOP_BOUND = "STOP_BOUND";

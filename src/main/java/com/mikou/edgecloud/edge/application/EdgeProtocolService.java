@@ -7,8 +7,12 @@ import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 public interface EdgeProtocolService {
+    /**
+     * @param port      单端口，与 portRange 互斥
+     * @param portRange 端口范围字符串 "start-end"，与 port 互斥
+     */
     EdgeProtocolDto createProtocol(UUID edgeTag, String protocol, Integer ipId,
-                                   Integer port, Integer portRangeStart, Integer portRangeEnd);
+                                   Integer port, String portRange);
     void destroyProtocol(Integer id);
     Page<EdgeProtocolDto> listProtocolsByEdgeTag(UUID edgeTag, Pageable pageable);
 }

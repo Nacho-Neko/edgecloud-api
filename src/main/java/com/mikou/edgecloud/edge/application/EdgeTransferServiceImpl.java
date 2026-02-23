@@ -15,7 +15,7 @@ import com.mikou.edgecloud.edge.infrastructure.persistence.mapper.EdgeNicIpMappe
 import com.mikou.edgecloud.edge.infrastructure.persistence.mapper.EdgeNicMapper;
 import com.mikou.edgecloud.edge.infrastructure.persistence.mapper.EdgeProtocolMapper;
 import com.mikou.edgecloud.edge.infrastructure.persistence.mapper.EdgeTransferMapper;
-import com.mikou.edgecloud.business.eop.domain.events.EopNotifyMessage;
+import com.mikou.edgecloud.edge.domain.events.EdgeNotifyMessage;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,8 +80,8 @@ public class EdgeTransferServiceImpl implements EdgeTransferService {
         edgeTransferMapper.insert(entity);
 
         EdgeTransferDto dto = mapToDto(entity, protocol);
-        notifyNats(EopNotifyMessage.ACTION_CREATE_TRANSFER, senderEdgeTag, dto);
-        notifyNats(EopNotifyMessage.ACTION_CREATE_TRANSFER, protocol.getEdgeTag(), dto);
+        notifyNats(EdgeNotifyMessage.ACTION_CREATE_TRANSFER, senderEdgeTag, dto);
+        notifyNats(EdgeNotifyMessage.ACTION_CREATE_TRANSFER, protocol.getEdgeTag(), dto);
         return dto;
     }
 
@@ -94,8 +94,8 @@ public class EdgeTransferServiceImpl implements EdgeTransferService {
         if (entity == null) return;
 
         edgeTransferMapper.deleteById(entity.getId());
-        notifyNats(EopNotifyMessage.ACTION_DELETE_TRANSFER, entity.getSenderEdgeTag(), entity);
-        notifyNats(EopNotifyMessage.ACTION_DELETE_TRANSFER, entity.getTargetEdgeTag(), entity);
+        notifyNats(EdgeNotifyMessage.ACTION_DELETE_TRANSFER, entity.getSenderEdgeTag(), entity);
+        notifyNats(EdgeNotifyMessage.ACTION_DELETE_TRANSFER, entity.getTargetEdgeTag(), entity);
     }
 
     @Override
@@ -143,6 +143,9 @@ public class EdgeTransferServiceImpl implements EdgeTransferService {
             String ipStr = protocolIp != null
                     ? (protocolIp.getPublicIp() != null ? protocolIp.getPublicIp() : protocolIp.getPrivateIp())
                     : null;
+            String portRange = (protocol.getPortRangeStart() != null && protocol.getPortRangeEnd() != null)
+                    ? protocol.getPortRangeStart() + "-" + protocol.getPortRangeEnd()
+                    : null;
             protocolDto = new EdgeProtocolDto()
                     .setId(protocol.getId())
                     .setEdgeTag(protocol.getEdgeTag())
@@ -150,8 +153,7 @@ public class EdgeTransferServiceImpl implements EdgeTransferService {
                     .setIpId(protocol.getIpId())
                     .setIp(ipStr)
                     .setPort(protocol.getPort())
-                    .setPortRangeStart(protocol.getPortRangeStart())
-                    .setPortRangeEnd(protocol.getPortRangeEnd());
+                    .setPortRange(portRange);
         }
 
         EdgeNicIpEntity sendIp = edgeNicIpMapper.selectById(e.getSendIpId());
@@ -171,6 +173,6 @@ public class EdgeTransferServiceImpl implements EdgeTransferService {
     }
 
     private void notifyNats(String action, UUID edgeTag, Object data) {
-        natsClient.publish("eop.notify", new EopNotifyMessage(action, edgeTag, data));
+        natsClient.publish("edge.notify", new EdgeNotifyMessage(action, edgeTag, data));
     }
 }
