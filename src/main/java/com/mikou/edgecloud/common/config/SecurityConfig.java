@@ -10,8 +10,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -30,49 +28,54 @@ public class SecurityConfig {
         return new JwtService(jwtSecret, jwtTtlSeconds);
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
     /**
      * 管理员路径安全配置 - 优先级高
+     * 测试阶段：已注释鉴权要求，允许所有请求
      */
     @Bean
     @Order(1)
     public SecurityFilterChain adminSecurityFilterChain(HttpSecurity http, JwtService jwtService) throws Exception {
-        JwtAuthenticationFilter adminJwtFilter = new JwtAuthenticationFilter(jwtService, true);
+        // 测试阶段：注释掉JWT过滤器
+        // JwtAuthenticationFilter adminJwtFilter = new JwtAuthenticationFilter(jwtService, true);
 
         http
                 .securityMatcher("/api/admin/**")
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(registry -> registry
-                        .requestMatchers("/api/admin/auth/login").permitAll()
-                        .requestMatchers("/api/admin/**").authenticated()
-                )
-                .addFilterBefore(adminJwtFilter, UsernamePasswordAuthenticationFilter.class);
+                        // 测试阶段：允许所有请求，无需鉴权
+                        .anyRequest().permitAll()
+                        // .requestMatchers("/api/admin/auth/login", "/api/admin/auth/change-password").permitAll()
+                        // .requestMatchers("/api/admin/**").authenticated()
+                );
+                // 测试阶段：注释掉JWT过滤器
+                // .addFilterBefore(adminJwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     /**
      * 普通账户路径安全配置
+     * 测试阶段：已注释鉴权要求，允许所有请求
      */
     @Bean
     @Order(2)
     public SecurityFilterChain accountSecurityFilterChain(HttpSecurity http, JwtService jwtService) throws Exception {
-        JwtAuthenticationFilter accountJwtFilter = new JwtAuthenticationFilter(jwtService, false);
+        // 测试阶段：注释掉JWT过滤器
+        // JwtAuthenticationFilter accountJwtFilter = new JwtAuthenticationFilter(jwtService, false);
 
         http
                 .securityMatcher("/api/account/**")
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(registry -> registry
-                        .requestMatchers("/api/account/login", "/api/account/register").permitAll()
-                        .requestMatchers("/api/account/**").authenticated()
-                )
-                .addFilterBefore(accountJwtFilter, UsernamePasswordAuthenticationFilter.class);
+                        // 测试阶段：允许所有请求，无需鉴权
+                        .anyRequest().permitAll()
+                        // .requestMatchers("/api/account/login", "/api/account/register").permitAll()
+                        // .requestMatchers("/api/account/**").authenticated()
+                );
+                // 测试阶段：注释掉JWT过滤器
+                // .addFilterBefore(accountJwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
