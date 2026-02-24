@@ -1,18 +1,16 @@
 package com.mikou.edgecloud.business.api;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.mikou.edgecloud.business.api.dto.BusinessServiceDto;
 import com.mikou.edgecloud.business.api.dto.BusinessCapabilityDto;
+import com.mikou.edgecloud.business.api.dto.BusinessServiceDto;
 import com.mikou.edgecloud.business.application.BusinessAdminService;
 import com.mikou.edgecloud.business.application.BusinessCapabilityRegistry;
 import com.mikou.edgecloud.business.domain.ProductStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -33,8 +31,7 @@ public class BusinessAdminController {
     }
 
     @GetMapping("/capabilities")
-    @Operation(summary = "查询系统已注册的业务能力", 
-               description = "返回系统中所有已注册的业务能力，如 EOP 等")
+    @Operation(summary = "查询系统已注册的业务能力")
     public List<BusinessCapabilityDto> getCapabilities() {
         return capabilityRegistry.getCapabilities();
     }
@@ -46,18 +43,50 @@ public class BusinessAdminController {
     }
 
     @GetMapping("/list")
-    @Operation(summary = "查询业务列表", description = "查询 Business 服务列表，支持按账户ID、业务类型和状态筛选")
-    public Page<BusinessServiceDto> listBusiness(
-            @Parameter(description = "账户ID（可选）")
+    @Operation(summary = "分页查询业务服务列表",
+               description = "businessType 必填，如 EOP；支持按 accountId、status 过滤")
+    public Page<? extends BusinessServiceDto> listBusiness(
+            @RequestParam String businessType,
             @RequestParam(required = false) UUID accountId,
-            @Parameter(description = "业务类型（可选），如：EOP")
-            @RequestParam(required = false) String businessType,
-            @Parameter(description = "服务状态（可选）：ACTIVE, SUSPENDED, EXPIRED")
             @RequestParam(required = false) ProductStatus status,
-            @Parameter(description = "页码，从0开始")
             @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "每页大小")
             @RequestParam(defaultValue = "10") int size) {
         return businessAdminService.listBusinessServices(accountId, businessType, status, page, size);
+    }
+
+    @GetMapping("/service")
+    @Operation(summary = "查询单条服务详情")
+    public ResponseEntity<BusinessServiceDto> getService(
+            @RequestParam String businessType,
+            @RequestParam UUID serviceTag) {
+        return ResponseEntity.ok(businessAdminService.getService(businessType, serviceTag));
+    }
+
+    @PostMapping("/service/suspend")
+    @Operation(summary = "暂停服务（欠费、违规等）")
+    public ResponseEntity<Void> suspendService(
+            @RequestParam String businessType,
+            @RequestParam UUID serviceTag,
+            @RequestParam(defaultValue = "manual") String reason) {
+        businessAdminService.suspendService(businessType, serviceTag, reason);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/service/resume")
+    @Operation(summary = "恢复服务")
+    public ResponseEntity<Void> resumeService(
+            @RequestParam String businessType,
+            @RequestParam UUID serviceTag) {
+        businessAdminService.resumeService(businessType, serviceTag);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/service/expire")
+    @Operation(summary = "手动过期服务")
+    public ResponseEntity<Void> expireService(
+            @RequestParam String businessType,
+            @RequestParam UUID serviceTag) {
+        businessAdminService.expireService(businessType, serviceTag);
+        return ResponseEntity.ok().build();
     }
 }

@@ -22,7 +22,6 @@ import com.mikou.edgecloud.edge.infrastructure.persistence.mapper.EdgeNicIpMappe
 import com.mikou.edgecloud.edge.infrastructure.persistence.mapper.EdgeAreaMapper;
 import com.mikou.edgecloud.business.eop.domain.enums.EopDirection;
 import com.mikou.edgecloud.business.eop.domain.events.EopNotifyMessage;
-import com.mikou.edgecloud.business.eop.domain.events.EopServiceExpiredEvent;
 import com.mikou.edgecloud.business.eop.infrastructure.persistence.mapper.EopAppMapper;
 import com.mikou.edgecloud.business.eop.infrastructure.persistence.mapper.EopBoundMapper;
 import com.mikou.edgecloud.business.eop.infrastructure.persistence.mapper.EopProductMapper;
@@ -32,7 +31,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mikou.edgecloud.business.eop.domain.model.EopBoundParams;
 import com.mikou.edgecloud.business.eop.domain.model.EopServiceEntitlements;
 import com.mikou.edgecloud.business.domain.ProductStatus;
-import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -280,15 +278,6 @@ public class EopService {
     }
 
     /**
-     * 级联回收：当服务到期时暂停所有 Bound
-     */
-    @EventListener
-    @Transactional
-    public void onServiceExpired(EopServiceExpiredEvent event) {
-        suspendServiceBounds(event.serviceId());
-    }
-
-    /**
      * 暂停服务下的所有 Bound
      */
     @Transactional
@@ -367,6 +356,23 @@ public class EopService {
             throw new IllegalArgumentException("Service not found: " + tag);
         }
         return service;
+    }
+
+    public EopServiceDto getServiceByTagDto(UUID serviceTag) {
+        EopServiceEntity s = getServiceByTag(serviceTag.toString());
+        EopProductEntity p = eopProductMapper.selectById(s.getProductId());
+        Map<UUID, com.mikou.edgecloud.business.api.dto.AccountSimpleDto> accountMap =
+                buildAccountMap(s.getOwnerId(), java.util.List.of(s));
+        return new EopServiceDto()
+                .setServiceTag(s.getTag())
+                .setProductName(p != null ? p.getName() : "Unknown")
+                .setProductTag(p != null ? p.getTag() : null)
+                .setMonthlyPrice(s.getMonthlyPrice())
+                .setProductStatus(s.getStatus())
+                .setEntitlements(s.getEntitlements())
+                .setExpiredAt(s.getExpiredAt())
+                .setCreatedAt(s.getCreatedAt())
+                .setAccount(accountMap.get(s.getOwnerId()));
     }
 
     public Page<EopServiceDto> listMyServices(UUID ownerId, Pageable pageable) {

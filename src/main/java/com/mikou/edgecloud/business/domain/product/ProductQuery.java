@@ -1,41 +1,36 @@
 package com.mikou.edgecloud.business.domain.product;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.mikou.edgecloud.business.api.dto.BusinessServiceDto;
 import com.mikou.edgecloud.business.domain.ProductStatus;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
- * 产品查询接口
+ * 产品查询 SPI
+ * 各业务域实现此接口，business 顶层通过 ProductCapabilityLocator 调用，不直接依赖任何子域。
  */
 public interface ProductQuery {
-    
     /**
-     * 查询单个产品
-     * @param productId 产品ID
-     * @return 产品信息（业务特定的产品对象）
+     * 分页查询该业务域的服务列表（供管理后台使用）
+     *
+     * @param ownerId  账户 ID（可选）
+     * @param status   服务状态（可选）
+     * @param pageable 分页参数
      */
-    Object getProduct(String productId);
-    
+    Page<? extends BusinessServiceDto> listServices(UUID ownerId, ProductStatus status, Pageable pageable);
+
     /**
-     * 查询账户的所有产品
-     * @param accountId 账户ID
-     * @return 产品列表
+     * 查询单条服务详情
+     *
+     * @param serviceTag 服务唯一标识
      */
-    List<Object> listProducts(String accountId);
-    
+    BusinessServiceDto getService(UUID serviceTag);
+
     /**
-     * 查询产品状态
-     * @param productId 产品ID
-     * @return 产品状态
+     * 查询服务状态
      */
-    ProductStatus getProductStatus(String productId);
-    
-    /**
-     * 统计账户的产品数量
-     * @param accountId 账户ID
-     * @return 产品数量
-     */
-    default long countProducts(String accountId) {
-        return listProducts(accountId).size();
-    }
+    ProductStatus getServiceStatus(UUID serviceTag);
 }
